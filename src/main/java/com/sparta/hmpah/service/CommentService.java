@@ -7,136 +7,85 @@ import com.sparta.hmpah.entity.Comment;
 import com.sparta.hmpah.entity.CommentLike;
 import com.sparta.hmpah.entity.Post;
 import com.sparta.hmpah.entity.User;
+import com.sparta.hmpah.exception.CommentException;
 import com.sparta.hmpah.repository.CommentLikeRepository;
 import com.sparta.hmpah.repository.CommentRepository;
 import com.sparta.hmpah.repository.PostRepository;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
-public class CommentService {
 
-  private final PostRepository postRepository;
-  private final CommentRepository commentRepository;
-  private final CommentLikeRepository commentLikeRepository;
+public interface CommentService {
 
-  @Transactional(readOnly = true)
-  public List<CommentResponse> getComments(Long postId) { // 게시글 id를 기준으로 속해있는 모든 댓글을 가져옴
+  /**
+   * postId 기준 모든 댓글 조회
+   * @param postId 게시글에 id
+   * @return postId 기준 모든 댓글
+   */
+  public List<CommentResponse> getComments(Long postId);
 
-    List<Comment> commentList = commentRepository.findByPostIdOrderByCreatedAtAsc(postId);
-    return commentList.stream().map(CommentResponse::new).toList();
-  }
+  /**
+   * @param requestDto 댓글 생성 요청 정보
+   * @param user 댓글 생성 요청자
+   * @return 댓글 생성 결과
+   */
+  public CommentResponse createComment(CommentRequest requestDto,User user);
 
-  public CommentResponse createComment(CommentRequest requestDto,User user) { // 댓글 생성
-    Post post = postRepository.findById(requestDto.getPostId()).orElseThrow();
-    int position;//대댓글의 위치
-    if(requestDto.getParentId()!=null){
-      if(commentRepository.existsByParentId(requestDto.getParentId())){//대댓글이면서 이전에 작성된 대댓글이 존재
-        List<Comment> childComments = commentRepository.findAllByParentIdOrderByPositionDesc(requestDto.getParentId());//position으로 orderby
-        position = childComments.size()+1;
-      }else position = 1;//대댓글 이나 이전에 작성된 대댓글 없음
-    }else position = 0;//일반 댓글
-    Comment comment = new Comment(requestDto, user, post, position);
-    return new CommentResponse(commentRepository.save(comment));
-  }
+  /**
+   * @param id 수정할 댓글 id
+   * @param requestDto 수정될 댓글의 정보
+   * @param user 댓글 수정 요청자
+   * @return 댓글 수정 정보
+   */
+  public CommentResponse updateComment(Long id, CommentRequest requestDto, User user);
 
-  @Transactional
-  public CommentResponse updateComment(Long id, CommentRequest requestDto,
-      User user) { //댓글 id를 기준으로 댓글 update
-    Comment comment = findyComment(id);
-    if (validateUsername(comment, user)) { // 작성자와 로그인한 user가 일치할 경우에만 업데이트
-      comment.update(requestDto);
-      return new CommentResponse(comment);
-    } else {
-      throw new IllegalArgumentException("선택한 댓글은 존재하지 않습니다.");
-    }
-  }
+  /**
+   * @param id 삭제할 댓글 id
+   * @param user 댓글 삭제 요청자
+   * @return 삭제후 postId 기준 모든 댓글
+   */
+  public List<CommentResponse> deleteComment(Long id, User user);
 
+  /**
+   * @param id 찾아올 댓글 id
+   * @return 찾아온 댓글
+   */
+  public Comment findyComment(Long id);
 
-  @Transactional
-  public List<CommentResponse> deleteComment(Long id, User user) { //댓글 id를 기준으로 댓글삭제
-    Comment comment = findyComment(id);//댓글 불러옴
-    if (validateUsername(comment, user)) {//작성자 일치
-      deleteChild(id);
-    }
-    return commentRepository.findByPostIdOrderByCreatedAtAsc(comment.getPost().getId()).stream().map(CommentResponse::new).toList();
-  }
+  /**
+   * @param postId PostId기준 댓글 삭제
+   */
+  public void deleteCommentByPostId(Long postId);
 
-  public Comment findyComment(Long id) {// id를 기준으로 댓글 찾아옴
-    return commentRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("선택한 댓글은 존재하지 않습니다."));
-  }
+  /**
+   * @param comment 가져온 댓글
+   * @param user 현제 유저
+   * @return 가져온 댓글과 현제 유저의 id를 비교하여 작성자인지 확인 하여 return
+   */
+  public boolean validateUsername(Comment comment, User user);
 
-  public void deleteCommentByPostId(Long postId) { //post의 id를 기준으로 모든 댓글 삭제
-    commentRepository.deleteByPostId(postId);
-  }
+  /**
+   * @param id 좋아요 갯수를 확인할 댓글 id
+   * @return 좋아요 갯수를 return
+   */
+  public Long countByCommentId(Long id);
 
-  public boolean validateUsername(Comment comment, User user) {
-    if (comment.getUser().getId().equals(user.getId())) {
-      return true;
-    }
-    return false;
-  }
+  /**
+   * @param requestDto 좋아요 생성 요청 정보
+   * @param user 좋아요 생성 요청자
+   * @return 좋아요 갯수 return
+   */
+  public Long createCommentLike(CommentLikeRequest requestDto, User user);
 
-
-  public Long countByCommentId(Long id) {
-    return commentLikeRepository.countByCommentId(id);
-  }
-
-  public Long createCommentLike(CommentLikeRequest requestDto, User user) {
-    Long commentId = requestDto.getCommentId();
-    Comment comment = commentRepository.findById(commentId).orElseThrow();
-    if (commentLikeState(comment, user)) {
-      commentLikeRepository.save(new CommentLike(comment, user));
-    }
-    return countByCommentId(commentId);
-  }
-
-  @Transactional
-  public Long deleteCommentLike(Long commentId, User user) {//추천 삭제
-    Long userId = user.getId();
-    if (existsByCommentIdAndUserId(commentId, userId)) {//추천이 존재할 경우에만 삭제
-      CommentLike commentLike = commentLikeRepository.findByCommentIdAndUserId(commentId, userId);
-      commentLikeRepository.delete(commentLike);
-    }
-    return countByCommentId(commentId);
-  }
-
-  private boolean existsByCommentIdAndUserId(Long commentId, Long userId) { //이미 추천했다면 true 아니면 false
-    return commentLikeRepository.existsByCommentIdAndUserId(commentId, userId);
-  }
-
-
-  private boolean checkWriter(Long commentId, Long userId) {
-    Comment comment = commentRepository.findById(commentId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 postId 입니다."));
-    return userId.equals(comment.getUser().getId());
-  }
-
-  private boolean commentLikeState(Comment comment, User user) {
-    return (!existsByCommentIdAndUserId(comment.getId(), user.getId()) && !checkWriter(
-        comment.getId(), user.getId()));
-  }
-
-  private void deleteChild(Long id){
-    if(commentRepository.existsByParentId(id)){//대댓글 존재
-      List<Comment> childList = commentRepository.findAllByParentIdOrderByPositionDesc(id);
-      for(Comment c : childList){
-        deleteChild(c.getId());//재귀 호출로 하위 댓글에대한 모든 삭제 처리
-      }
-      deleting(id);//댓글 삭제;
-    }else{
-      deleting(id);// 하위 댓글이 없다면 삭제후 재귀호출의 중단
-    }
-  }
-
-  private void deleting(Long id){
-    commentRepository.deleteById(id);
-    if(commentLikeRepository.existsByCommentId(id)){//댓글에 대한 좋아요 조회
-      commentLikeRepository.deleteAllByCommentId(id);//좋아요 삭제
-    }
-  }
+  /**
+   * @param commentId 좋아요 삭제할 댓글의 id
+   * @param user 댓글 삭제 요청자
+   * @return 좋아요 갯수 return
+   */
+  public Long deleteCommentLike(Long commentId, User user);
 }

@@ -155,7 +155,6 @@ public class CommentIntegrationTest {
     Comment comment = commentService.findyComment(firstCreateCommentId);
 
     //then
-
     assertNotNull(comment.getId());
     assertEquals(post.getTitle(),comment.getPost().getTitle());
     assertEquals(content,comment.getContent());
