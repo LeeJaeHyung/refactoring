@@ -1,20 +1,26 @@
 package com.sparta.hmpah.service;
 
+import com.mysema.commons.lang.IteratorAdapter;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sparta.hmpah.dto.requestDto.CommentLikeRequest;
 import com.sparta.hmpah.dto.requestDto.CommentRequest;
 import com.sparta.hmpah.dto.responseDto.CommentResponse;
 import com.sparta.hmpah.entity.Comment;
 import com.sparta.hmpah.entity.CommentLike;
 import com.sparta.hmpah.entity.Post;
+import com.sparta.hmpah.entity.QComment;
 import com.sparta.hmpah.entity.User;
 import com.sparta.hmpah.exception.CommentException;
 import com.sparta.hmpah.repository.CommentLikeRepository;
 import com.sparta.hmpah.repository.CommentRepository;
 import com.sparta.hmpah.repository.PostRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +32,8 @@ public class CommentServiceImpl implements CommentService{
   private final CommentRepository commentRepository;
   private final CommentLikeRepository commentLikeRepository;
   private final MessageSource messageSource;
+  @PersistenceContext
+  EntityManager em;
 
   @Override
   @Transactional(readOnly = true)
@@ -166,5 +174,19 @@ public class CommentServiceImpl implements CommentService{
     if(commentLikeRepository.existsByCommentId(id)){//댓글에 대한 좋아요 조회
       commentLikeRepository.deleteAllByCommentId(id);//좋아요 삭제
     }
+  }
+
+  public List<Comment> queryDSL(User user, String content, Pageable pageable){
+    QComment comment = QComment.comment;
+    var predicate = comment.content.like("%"+content+"%").and(comment.user.eq(user));
+    var comments = commentRepository.findAll(predicate, pageable);
+    return IteratorAdapter.asList(comments.iterator());
+  }
+
+  public List<Comment> queryDSL2(User user, String content, Pageable pageable){
+    JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(em);
+    QComment comment = QComment.comment;
+    List<Comment> commentList = jpaQueryFactory.selectFrom(comment).where(comment.content.like("%"+content+"%").and(comment.user.eq(user))).offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
+    return commentList;
   }
 }

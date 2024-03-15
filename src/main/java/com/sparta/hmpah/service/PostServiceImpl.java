@@ -8,6 +8,7 @@ import com.sparta.hmpah.entity.Post;
 import com.sparta.hmpah.entity.PostLike;
 import com.sparta.hmpah.entity.PostMember;
 import com.sparta.hmpah.entity.PostStatusEnum;
+import com.sparta.hmpah.entity.QPost;
 import com.sparta.hmpah.entity.User;
 import com.sparta.hmpah.repository.CommentLikeRepository;
 import com.sparta.hmpah.repository.CommentRepository;
@@ -19,6 +20,7 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import jdk.dynalink.beans.StaticClass;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -223,7 +225,5 @@ public class PostServiceImpl implements PostService {
     Page<Post> postList = postRepository.findByStatusContainingAndLocationContainingAndTitleContaining(status, location, title, pageable);
     return postList.map(post -> new PostResponse(post,getCurrentCount(post), getLikescnt(post), getIsMember(post, user)));
   }
-
-
 
 }

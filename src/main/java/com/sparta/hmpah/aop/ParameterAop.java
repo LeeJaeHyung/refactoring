@@ -16,7 +16,7 @@ public class ParameterAop {
   @Pointcut("execution(* com.sparta.hmpah.controller..*.*(..))")
   private void point() {}
 
-  @Before("cut()")
+  @Before("point()")
   public void before(JoinPoint joinPoint) {
 
     //실행되는 함수 이름을 가져오고 출력
@@ -36,7 +36,7 @@ public class ParameterAop {
 
   //cut() 메서드가 종료되는 시점에 afterReturn() 메서드 실행
   //@AfterReturning 어노테이션의 returning 값과 afterReturn 매개변수 obj의 이름이 같아야 함
-  @AfterReturning(value = "cut()", returning = "obj")
+  @AfterReturning(value = "point()", returning = "obj")
   public void afterReturn(JoinPoint joinPoint, Object obj) {
     System.out.println("return obj");
     System.out.println(obj);
