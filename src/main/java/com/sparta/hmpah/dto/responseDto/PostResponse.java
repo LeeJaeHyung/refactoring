@@ -5,10 +5,13 @@ import static com.sparta.hmpah.entity.PostStatusEnum.*;
 import com.sparta.hmpah.entity.LocationEnum;
 import com.sparta.hmpah.entity.Post;
 import com.sparta.hmpah.entity.PostStatusEnum;
+import com.sparta.hmpah.entity.User;
+import java.security.PublicKey;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import org.springframework.security.core.parameters.P;
 
 @Getter
 @Setter
@@ -27,6 +30,20 @@ public class PostResponse {
     private Boolean isMember;
 
     public PostResponse(Post post, Integer currentCount, Integer likescnt, Boolean isMember) {
+        this.id = post.getId();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.location = post.getLocation().getLabel();
+        this.nickname = post.getUser().getNickname();
+        this.maxCount = post.getMaxCount();
+        this.createdAt = post.getCreatedAt();
+        this.modifiedAt = post.getModifiedAt();
+        this.currentCount = currentCount;
+        this.likescnt = likescnt;
+        this.status = post.getStatus().getLabel();
+        this.isMember = isMember;
+    }
+    public PostResponse(Post post, User user){
         this.id = post.getId();
         this.title = post.getTitle();
         this.content = post.getContent();

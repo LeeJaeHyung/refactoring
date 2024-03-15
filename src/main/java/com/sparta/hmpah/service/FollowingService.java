@@ -2,88 +2,42 @@ package com.sparta.hmpah.service;
 
 import com.sparta.hmpah.dto.responseDto.FollowingResponse;
 import com.sparta.hmpah.dto.responseDto.InfoResponse;
-import com.sparta.hmpah.entity.Follow;
-import com.sparta.hmpah.entity.Post;
 import com.sparta.hmpah.entity.User;
-import com.sparta.hmpah.repository.FollowRepository;
-import com.sparta.hmpah.repository.PostRepository;
-import com.sparta.hmpah.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
 import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class FollowingService {
-    private final UserRepository userRepository;
-    private final FollowRepository followRepository;
-    private final PostRepository postRepository;
 
-    public List<FollowingResponse> showFollowings(User user) {
-        User findUser = userRepository.findById(user.getId()).orElseThrow();
-        //following들 찾기
-        List<Follow> followings = followRepository.findByFollower(findUser);
-        List<FollowingResponse> followingResponses = new ArrayList<>();
 
-        for (Follow following : followings) {
-            followingResponses.add(new FollowingResponse(following.getFollowing().getUsername(), following.getFollowing().getNickname()));
-        }
+public interface FollowingService {
 
-        return followingResponses;
-    }
-    public List<FollowingResponse> showFollowings(Long userId) {
-        User findUser = userRepository.findById(userId).orElseThrow();
-        //following들 찾기
-        List<Follow> followings = followRepository.findByFollower(findUser);
-        List<FollowingResponse> followingResponses = new ArrayList<>();
+    /** 자신의 팔로잉 목록 조회.
+     * @param user 팔로잉 정보 조회 요청자
+     * @return 팔로잉 목록 정보
+     */
+    List<FollowingResponse> showFollowings(User user);
 
-        for (Follow following : followings) {
-            followingResponses.add(new FollowingResponse(following.getFollowing().getUsername(), following.getFollowing().getNickname()));
-        }
+    /** 팔로잉 id 기준 팔로잉 목록 조회.
+     * @param userId 대상자의 id 정보
+     * @return id 대상자의 팔로잉 정보
+     */
+    List<FollowingResponse> showFollowings(Long userId);
 
-        return followingResponses;
-    }
+    /** 팔로잉 id 대상자의 상세 정보 조회.
+     * @param followingId 조회할 대상자의 id
+     * @return 팔로잉 대상자의 상세정보
+     */
+    InfoResponse showFollowingInfo(Long followingId);
 
-    public InfoResponse showFollowingInfo(Long followingId) {
-        User following = userRepository.findById(followingId).orElseThrow();
-        //follower
-        int followerCount = followRepository.findByFollowing(following).size();
-        //following
-        int followingCount = followRepository.findByFollower(following).size();
-        //post
-        List<Post> postsByFollowing = postRepository.findAllByUser(following);
-        return new InfoResponse(following.getUsername(),
-                following.getNickname(),
-                following.getProfile(),
-                following.getGender().getValue(),
-                following.getAge(),
-                followerCount,
-                followingCount,
-                postsByFollowing
-        );
-    }
+    /** 팔로잉 삭제
+     * @param user 삭제 요청자 정보
+     * @param followingId 삭제할 대상자 id
+     * @return 팔로잉 삭제 정보
+     */
+    FollowingResponse deleteFollowing(User user,Long followingId);
 
-    @Transactional
-    public FollowingResponse deleteFollowing(User user,Long followingId){
-        User findUser = userRepository.findById(user.getId()).orElseThrow();
-        User following = userRepository.findById(followingId).orElseThrow();
-
-        followRepository.deleteByFollowerAndFollowing(findUser,following);
-        return new FollowingResponse(following.getUsername(), following.getNickname());
-    }
-
-    @Transactional
-    public FollowingResponse following(User user, Long followingId) {
-        User findUser = userRepository.findById(user.getId()).orElseThrow();
-        User following = userRepository.findById(followingId).orElseThrow();
-        if(followRepository.existsByFollowerAndFollowing(findUser, following)){
-            throw new IllegalArgumentException("팔로잉 되어 있습니다.");
-        }
-        Follow save = followRepository.save(new Follow(findUser, following));
-        return new FollowingResponse(save.getFollowing().getUsername(), save.getFollowing().getNickname());
-    }
+    /** 팔로잉 생성 요청
+     * @param user 팔로잉 생성 요청자 정보
+     * @param followingId 팔로잉 추가할 대상 id
+     * @return 팔로잉 생성 정보
+     */
+    FollowingResponse following(User user, Long followingId);
 }

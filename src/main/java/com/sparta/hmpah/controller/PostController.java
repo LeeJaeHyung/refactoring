@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,12 +32,16 @@ public class PostController {
 
   @GetMapping
   @Operation(summary = "게시글 목록 조회(옵션)", description = "상태, 지역, 제목 옵션을 통해 게시글 목록을 조회한다.")
-  public List<PostResponse> getPost(
+  public Page<PostResponse> getPost(
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String location,
       @RequestParam(required = false) String title,
+      @RequestParam("page") int page,
+      @RequestParam("size") int size,
+      @RequestParam("sortBy") String sortBy,
+      @RequestParam("isAsc") boolean isAsc,
       @AuthenticationPrincipal UserDetailsImpl userDetails){
-    return postService.getPostListByOption(status, location, title, userDetails.getUser());
+    return postService.getPostListByOption(status, location, title, userDetails.getUser(), page-1, size, sortBy, isAsc);
   }
 
   @GetMapping("/follows")

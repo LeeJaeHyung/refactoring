@@ -7,6 +7,7 @@ import com.sparta.hmpah.entity.User;
 import com.sparta.hmpah.repository.PasswordHistoryRepository;
 import com.sparta.hmpah.repository.UserRepository;
 import com.sparta.hmpah.service.PasswordService;
+import com.sparta.hmpah.service.PasswordServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +47,7 @@ public class PasswordServiceTest {
         passwordRequest.setNewPassword("qweasdzxc1");
         passwordRequest.setCheckPassword("bigman111");
         User user = new User();
-        PasswordService passwordService = new PasswordService(passwordHistoryRepository, userRepository, passwordEncoder);
+        PasswordService passwordService = new PasswordServiceImpl(passwordHistoryRepository, userRepository, passwordEncoder);
 
         //when
         PasswordResponse passwordResponse = passwordService.updatePassword(user, passwordRequest);
@@ -63,7 +64,7 @@ public class PasswordServiceTest {
         passwordRequest.setNewPassword("jinchan1!");
         passwordRequest.setCheckPassword("jinchan1!");
         User user = new User();
-        PasswordService passwordService = new PasswordService(passwordHistoryRepository, userRepository, passwordEncoder);
+        PasswordService passwordService = new PasswordServiceImpl(passwordHistoryRepository, userRepository, passwordEncoder);
 
         //when
         PasswordResponse passwordResponse = passwordService.updatePassword(user, passwordRequest);
@@ -86,7 +87,7 @@ public class PasswordServiceTest {
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
-        PasswordService passwordService = new PasswordService(passwordHistoryRepository, userRepository, passwordEncoder);
+        PasswordService passwordService = new PasswordServiceImpl(passwordHistoryRepository, userRepository, passwordEncoder);
         //when
         PasswordResponse passwordResponse = passwordService.updatePassword(user, passwordRequest);
         //then
@@ -120,7 +121,7 @@ public class PasswordServiceTest {
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
-        PasswordService passwordService = new PasswordService(passwordHistoryRepository, userRepository, passwordEncoder);
+        PasswordService passwordService = new PasswordServiceImpl(passwordHistoryRepository, userRepository, passwordEncoder);
         //when
         PasswordResponse passwordResponse = passwordService.updatePassword(user, passwordRequest);
         //then
@@ -154,7 +155,7 @@ public class PasswordServiceTest {
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
-        PasswordService passwordService = new PasswordService(passwordHistoryRepository, userRepository, passwordEncoder);
+        PasswordService passwordService = new PasswordServiceImpl(passwordHistoryRepository, userRepository, passwordEncoder);
         //when
         PasswordResponse passwordResponse = passwordService.updatePassword(user, passwordRequest);
         //then

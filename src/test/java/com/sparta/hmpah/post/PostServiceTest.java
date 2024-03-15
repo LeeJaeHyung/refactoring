@@ -12,6 +12,7 @@ import com.sparta.hmpah.repository.PostLikeRepository;
 import com.sparta.hmpah.repository.PostMemberRepository;
 import com.sparta.hmpah.repository.PostRepository;
 import com.sparta.hmpah.service.PostService;
+import com.sparta.hmpah.service.PostServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +60,7 @@ public class PostServiceTest {
         5
     );
 
-    PostService postService = new PostService(
+    PostService postService = new PostServiceImpl(
         postRepository,
         commentRepository,
         postLikeRepository,
@@ -105,7 +106,7 @@ public class PostServiceTest {
         5
     );
 
-    PostService postService = new PostService(
+    PostService postService = new PostServiceImpl(
         postRepository,
         commentRepository,
         postLikeRepository,

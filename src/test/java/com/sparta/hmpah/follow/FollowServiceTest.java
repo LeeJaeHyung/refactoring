@@ -8,7 +8,9 @@ import com.sparta.hmpah.repository.FollowRepository;
 import com.sparta.hmpah.repository.PostRepository;
 import com.sparta.hmpah.repository.UserRepository;
 import com.sparta.hmpah.service.FollowerService;
+import com.sparta.hmpah.service.FollowerServiceImpl;
 import com.sparta.hmpah.service.FollowingService;
+import com.sparta.hmpah.service.FollowingServiceImpl;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -55,7 +57,7 @@ public class FollowServiceTest {
         for (int i = 0; i < 5; i++) {
             follows.add(new Follow(follower, followings.get(i)));
         }
-        FollowingService followingService = new FollowingService(userRepository, followRepository, postRepository);
+        FollowingService followingService = new FollowingServiceImpl(userRepository, followRepository, postRepository);
         //when
         when(followRepository.findByFollower(any(User.class))).thenReturn(follows);
 
@@ -91,7 +93,7 @@ public class FollowServiceTest {
         for (int i = 0; i < 5; i++) {
             follows.add(new Follow(followings.get(i),follower));
         }
-        FollowerService followerService = new FollowerService(userRepository, followRepository, postRepository);
+        FollowerService followerService = new FollowerServiceImpl(userRepository, followRepository, postRepository);
         //when
         when(followRepository.findByFollowing(any(User.class))).thenReturn(follows);
         given(userRepository.findById(follower.getId())).willReturn(Optional.of(follower));
@@ -127,7 +129,7 @@ public class FollowServiceTest {
         for (int i = 0; i < 5; i++) {
             follows.add(new Follow(followings.get(i),follower));
         }
-        FollowerService followerService = new FollowerService(userRepository, followRepository, postRepository);
+        FollowerService followerService = new FollowerServiceImpl(userRepository, followRepository, postRepository);
 
         given(userRepository.findById(follower.getId())).willReturn(Optional.of(follower));
         given(userRepository.findById(0L)).willReturn(Optional.of(followings.get(0)));

@@ -2,78 +2,34 @@ package com.sparta.hmpah.service;
 
 import com.sparta.hmpah.dto.responseDto.FollowerResponse;
 import com.sparta.hmpah.dto.responseDto.InfoResponse;
-import com.sparta.hmpah.entity.Follow;
-import com.sparta.hmpah.entity.Post;
 import com.sparta.hmpah.entity.User;
-import com.sparta.hmpah.repository.FollowRepository;
-import com.sparta.hmpah.repository.PostRepository;
-import com.sparta.hmpah.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
 import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class FollowerService {
-    private final UserRepository userRepository;
-    private final FollowRepository followRepository;
-    private final PostRepository postRepository;
 
+public interface FollowerService {
 
-    public List<FollowerResponse> showFollowers(User user) {
-        User findUser = userRepository.findById(user.getId()).orElseThrow();
-        //follower들 찾기
-        List<Follow> followers = followRepository.findByFollowing(findUser);
-        List<FollowerResponse> followerResponses = new ArrayList<>();
+    /** 자신의 팔로워 목록 조회
+     * @param user 팔로워 목록 조회자 정보
+     * @return 조회자의 팔로워 목록
+     */
+    List<FollowerResponse> showFollowers(User user);
 
-        for (Follow follower : followers) {
-            followerResponses.add(new FollowerResponse(follower.getFollower().getUsername(), follower.getFollower().getNickname()));
-        }
+    /** 대상자 팔로워 목록 조회
+     * @param userId 팔로워 조회할 대상 id
+     * @return 조회할 대상의 팔로워 목록
+     */
+    List<FollowerResponse> showFollowers(Long userId);
 
-        return followerResponses;
-    }
-    public List<FollowerResponse> showFollowers(Long userId) {
-        User findUser = userRepository.findById(userId).orElseThrow();
-        //follower들 찾기
-        List<Follow> followers = followRepository.findByFollowing(findUser);
-        List<FollowerResponse> followerResponses = new ArrayList<>();
+    /** 대상자의 상세 정보 조회
+     * @param followerId 상세정보를 조회할 대상의 id
+     * @return 상세정보를 조회할 대상의 상세정보
+     */
+    InfoResponse showFollowerInfo(Long followerId);
 
-        for (Follow follower : followers) {
-            followerResponses.add(new FollowerResponse(follower.getFollower().getUsername(), follower.getFollower().getNickname()));
-        }
-
-        return followerResponses;
-    }
-
-    public InfoResponse showFollowerInfo(Long followerId) {
-        User follower = userRepository.findById(followerId).orElseThrow();
-        //follower
-        int followerCount = followRepository.findByFollowing(follower).size();
-        //following
-        int followingCount = followRepository.findByFollower(follower).size();
-        //post
-        List<Post> postsByFollower = postRepository.findAllByUser(follower);
-        return new InfoResponse(follower.getUsername(),
-                follower.getNickname(),
-                follower.getProfile(),
-                follower.getGender().getValue(),
-                follower.getAge(),
-                followerCount,
-                followingCount,
-                postsByFollower
-        );
-    }
-
-    @Transactional
-    public FollowerResponse deleteFollower(User user,Long followerId){
-        User findUser = userRepository.findById(user.getId()).orElseThrow();
-        User follower = userRepository.findById(followerId).orElseThrow();
-
-        followRepository.deleteByFollowerAndFollowing(follower,findUser);
-        return new FollowerResponse(follower.getUsername(), follower.getNickname());
-    }
+    /** 팔로워 삭제
+     * @param user 팔로워를 삭제할 대상 정보
+     * @param followerId 삭제할 팔로워 id
+     * @return 팔로워를 삭제한 정보
+     */
+    FollowerResponse deleteFollower(User user,Long followerId);
 }

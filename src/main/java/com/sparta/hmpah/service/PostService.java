@@ -2,242 +2,96 @@ package com.sparta.hmpah.service;
 
 import com.sparta.hmpah.dto.requestDto.PostRequest;
 import com.sparta.hmpah.dto.responseDto.PostResponse;
-import com.sparta.hmpah.entity.Comment;
-import com.sparta.hmpah.entity.Follow;
-import com.sparta.hmpah.entity.LocationEnum;
-import com.sparta.hmpah.entity.Post;
-import com.sparta.hmpah.entity.PostLike;
-import com.sparta.hmpah.entity.PostMember;
-import com.sparta.hmpah.entity.PostStatusEnum;
 import com.sparta.hmpah.entity.User;
-import com.sparta.hmpah.repository.CommentLikeRepository;
-import com.sparta.hmpah.repository.CommentRepository;
-import com.sparta.hmpah.repository.FollowRepository;
-import com.sparta.hmpah.repository.PostLikeRepository;
-import com.sparta.hmpah.repository.PostMemberRepository;
-import com.sparta.hmpah.repository.PostRepository;
-import com.sparta.hmpah.repository.UserRepository;
-import jakarta.transaction.Transactional;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-@Service
-@RequiredArgsConstructor
-public class PostService {
-
-  private final PostRepository postRepository;
-  private final CommentRepository commentRepository;
-  private final PostLikeRepository postLikeRepository;
-  private final CommentLikeRepository commentLikeRepository;
-  private final PostMemberRepository postMemberRepository;
-  private final FollowRepository followRepository;
-
-  public List<PostResponse> getPostListByFollow(User user) {
-    List<Follow> followings = followRepository.findByFollower(user);
-    List<User> followingUserList = new ArrayList<>();
-    for (Follow following : followings) {
-      followingUserList.add(following.getFollowing());
-    }
-    List<Post> postList = new ArrayList<>();
-
-    for (User following : followingUserList) {
-      postList.addAll(postRepository.findAllByUser(following));
-    }
-
-    return createPostResponseList(postList, user);
-  }
-
-  public List<PostResponse> getPostListByMember(User user) {
-    List<PostMember> postMemberList = postMemberRepository.findAllByUser(user);
-    List<Post> postList = new ArrayList<>();
-
-    for (PostMember postMember : postMemberList) {
-      postList.add(postMember.getPost());
-    }
-
-    return createPostResponseList(postList, user);
-  }
-
-  public List<PostResponse> getMyPostList(User user) {
-    List<Post> postList = postRepository.findAllByUser(user);
-    return createPostResponseList(postList, user);
-  }
-
-  public PostResponse getPostById(Long postid, User user) {
-    Post post = getPostById(postid);
-    return createPostResponse(post, user);
-  }
-
-  @Transactional
-  public PostResponse createPost(PostRequest postRequest, User user) {
-    if(postRequest.getMaxcount()<1)
-      throw new IllegalArgumentException("모집인원은 0보다 커야합니다.");
-    Post post = postRepository.save(new Post(postRequest, user));
-    postMemberRepository.save(new PostMember(post, user));
-    post.updateStatus(getCurrentCount(post));
-
-    return createPostResponse(post, user);
-  }
-
-  @Transactional
-  public PostResponse updatePost(Long postid, PostRequest postRequest, User user) {
-    Post post = getPostById(postid);
-
-    if(!getIsOwner(post, user))
-      throw new IllegalArgumentException("해당 게시글을 수정할 권한이 없습니다.");
-
-    if(getCurrentCount(post)>postRequest.getMaxcount())
-      throw new IllegalArgumentException("모집인원은 현재 인원보다 커야 합니다.");
-
-    post.update(postRequest);
-    post.updateStatus(getCurrentCount(post));
-    return createPostResponse(post, user);
-  }
-
-  @Transactional
-  public String deletePost(Long postid, User user) {
-    Post post = getPostById(postid);
-
-    if(!getIsOwner(post, user))
-      throw new IllegalArgumentException("해당 게시글을 삭제할 권한이 없습니다.");
-
-    List<Comment> commentList = commentRepository.findAllByPost(post);
-
-    for (Comment comment : commentList) {
-      commentLikeRepository.deleteAllByComment(comment);
-      commentRepository.deleteById(comment.getId());
-    }
-    postMemberRepository.deleteAllByPost(post);
-    postLikeRepository.deleteAllByPost(post);
-    postRepository.deleteById(postid);
-
-    return "삭제되었습니다.";
-  }
-
-  @Transactional
-  public String likePost(Long postid, User user) {
-    Post post = getPostById(postid);
-
-    if(getIsOwner(post, user))
-      throw new IllegalArgumentException("자신의 게시물에는 좋아요를 할 수 없습니다.");
-
-    Optional<PostLike> postLike = Optional.ofNullable(
-        postLikeRepository.findByPostAndUser(post, user));
-    if(postLike.isPresent()){
-      postLikeRepository.deleteById(postLike.get().getId());
-      return "게시물에 좋아요를 취소합니다.";
-    }
-    else {
-      postLikeRepository.save(new PostLike(post, user));
-      return "게시물에 좋아요를 누르셨습니다.";
-    }
-  }
-
-  @Transactional
-  public String joinPost(Long postid, User user) {
-    Post post = getPostById(postid);
-
-    if(post.getUser().getId().equals(user.getId()))
-      throw new IllegalArgumentException("자신의 게시물에는 반드시 참여해야 합니다.");
-
-    Optional<PostMember> postMember = Optional.ofNullable(
-        postMemberRepository.findByPostAndUser(post, user));
-    if(postMember.isPresent()){
-      postMemberRepository.deleteById(postMember.get().getId());
-      post.updateStatus(getCurrentCount(post));
-      return "게시물에 참여를 취소합니다.";
-    }
-    else {
-      if(post.getStatus().equals(PostStatusEnum.COMPLETED))
-        return "모집인원이 가득 찼습니다.";
-      postMemberRepository.save(new PostMember(post, user));
-      post.updateStatus(getCurrentCount(post));
-      return "게시물에 참여하셨습니다.";
-    }
-  }
-  private Integer getCurrentCount(Post post){
-    return postMemberRepository.findAllByPost(post).size();
-  }
-
-  public Integer getLikescnt(Post post){
-    return postLikeRepository.findAllByPost(post).size();
-  }
-
-  public Boolean getIsMember(Post post, User user){
-    Optional<PostMember> postMember = Optional.ofNullable(
-        postMemberRepository.findByPostAndUser(post, user));
-    return postMember.isPresent();
-  }
-
-  public List<PostResponse> createPostResponseList(List<Post> postList, User user){
-    List<PostResponse> postResponseList = new ArrayList<>();
-    for (Post post : postList) {
-      postResponseList.add(new PostResponse(post, getCurrentCount(post), getLikescnt(post), getIsMember(post, user)));
-    }
-    return postResponseList;
-  }
+import org.springframework.data.domain.Page;
 
 
-  public PostResponse createPostResponse(Post post, User user){
-    return new PostResponse(post, getCurrentCount(post), getLikescnt(post), getIsMember(post, user));
-  }
+public interface PostService {
 
-  public Post getPostById(Long postid){
-    return postRepository.findById(postid).orElseThrow(
-        ()-> new IllegalArgumentException("해당 게시글이 존재하지 않습니다.")
-    );
-  }
+  /**
+   * 팔로우 하는 유저의 게시글 목록을 조회
+   * @param user 요청 유저정보
+   * @return 해당 유저의 게시글 목록
+   */
+  List<PostResponse> getPostListByFollow(User user);
 
-  public Boolean getIsOwner(Post post, User user){
-    if(post.getUser().getId().equals(user.getId()))
-      return true;
-    else
-      return false;
-  }
+  /**
+   * 참여중인 게시글 목록을 조회한다
+   * @param user 조회할 유저 정보
+   * @return 참여중인 게시글 반환
+   */
+  List<PostResponse> getPostListByMember(User user);
 
-  public List<PostResponse> getPostListByOption(String status, String location, String title, User user) {
-    Boolean isStatus = !(status==null);
-    Boolean isLocation = !(location==null);
-    Boolean isTitle = !(title==null);
-    List<Post> postList = postRepository.findAll();
-    if(isStatus)
-      postList = filterByStatus(postList, status);
-    if(isLocation)
-      postList = filterByLocation(postList, location);
-    if(isTitle)
-      postList = filterByTitle(postList, title);
-    return createPostResponseList(postList, user);
-  }
+  /**
+   * 자신의 게시글 목록을 조회
+   * @param user 조회 요청 정보
+   * @return 작성한 목록 게시글 반환
+   */
+  List<PostResponse> getMyPostList(User user);
 
-  private List<Post> filterByStatus(List<Post> postList, String status){
-    List<Post> posts = new ArrayList<>();
-    for (Post post : postList) {
-      if(post.getStatus().getLabel().equals(status))
-        posts.add(post);
-    }
-    return posts;
-  }
+  /**
+   * 게시글 ID를 통해 게시글을 조회
+   * @param postid 개시글 id
+   * @param user 요청 유저
+   * @return 게시글 반환
+   */
+  PostResponse getPostById(Long postid, User user);
 
-  private List<Post> filterByLocation(List<Post> postList, String location){
-    List<Post> posts = new ArrayList<>();
-    for (Post post : postList) {
-      if(post.getLocation().getLabel().equals(location))
-        posts.add(post);
-    }
-    return posts;
-  }
+  /**
+   * 게시글을 작성한다
+   * @param postRequest 게시글 생성 요청 정보
+   * @param user 게시글 생성 요청자
+   * @return 생성한 게시글 정보
+   */
+  PostResponse createPost(PostRequest postRequest, User user);
 
-  private List<Post> filterByTitle(List<Post> postList, String title){
-    List<Post> posts = new ArrayList<>();
-    for (Post post : postList) {
-      if(post.getTitle().contains(title))
-        posts.add(post);
-    }
-    return posts;
-  }
+  /**
+   * 게시글 ID를 통해 게시글을 수정
+   * @param postid 수정할 게시글 id
+   * @param postRequest 게시글 수정 요청 정보
+   * @param user 게시글 수정 요청자
+   * @return 게시글 수정 정보
+   */
+  PostResponse updatePost(Long postid, PostRequest postRequest, User user);
 
+  /**
+   *게시글 ID를 통해 게시글을 삭제
+   * @param postid 삭제할 게시글 id
+   * @param user 게시글 삭제 요청자
+   * @return 게시글 삭제 정보
+   */
+  String deletePost(Long postid, User user);
 
+  /**
+   * 게시글 ID를 통해 게시글을 좋아요 생성
+   * @param postid 좋아요할 게시글 id
+   * @param user 게시글 좋아요 요청자
+   * @return 게시글 좋아요 요청 결과 정보
+   */
+  String likePost(Long postid, User user);
+
+  /**
+   * 게시글 ID를 통해 게시글에 참여
+   * @param postid 참여할 게시글 id
+   * @param user 게시글 참여 요청자
+   * @return 게시글 참여 요청 처리 정보
+   */
+  String joinPost(Long postid, User user);
+
+  /**
+   * 상태, 지역, 제목 옵션을 통해 게시글 목록을 조회
+   *
+   * @param status   상태 정보
+   * @param location 지역 정보
+   * @param title    게시글 제목
+   * @param user     게시글 목록 조회 요청자
+   * @param page     page
+   * @param size     page 컷팅 사이즈
+   * @param sortBy   정렬 대상
+   * @param isAsc    정령 방식
+   * @return 상태, 지역, 제목 옵션에 따른 목록 조회결과
+   */
+  Page getPostListByOption(String status, String location, String title, User user,
+      int page, int size, String sortBy, boolean isAsc);
 }

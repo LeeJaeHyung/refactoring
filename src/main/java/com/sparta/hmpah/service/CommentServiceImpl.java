@@ -93,11 +93,6 @@ public class CommentServiceImpl implements CommentService{
   }
 
   @Override
-  public void deleteCommentByPostId(Long postId) { //post의 id를 기준으로 모든 댓글 삭제
-    commentRepository.deleteByPostId(postId);
-  }
-
-  @Override
   public boolean validateUsername(Comment comment, User user) {
     if (comment.getUser().getId().equals(user.getId())) {
       return true;

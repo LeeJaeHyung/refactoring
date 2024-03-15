@@ -1,9 +1,7 @@
 package com.sparta.hmpah.comment;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.sparta.hmpah.dto.requestDto.CommentRequest;
 import com.sparta.hmpah.dto.responseDto.CommentResponse;
@@ -14,13 +12,14 @@ import com.sparta.hmpah.repository.CommentLikeRepository;
 import com.sparta.hmpah.repository.CommentRepository;
 import com.sparta.hmpah.repository.PostRepository;
 import com.sparta.hmpah.service.CommentService;
+import com.sparta.hmpah.service.CommentServiceImpl;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.MessageSource;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentServiceTest {
@@ -34,10 +33,13 @@ public class CommentServiceTest {
   @Mock
   CommentLikeRepository commentLikeRepository;
 
+  @Mock
+  MessageSource messageSource;
+
   @Test
   @DisplayName("updateComment")
   void test(){
-    CommentService commentService = new CommentService(postRepository,commentRepository,commentLikeRepository);
+    CommentService commentService = new CommentServiceImpl(postRepository,commentRepository,commentLikeRepository,messageSource);
     CommentRequest requestDto = new CommentRequest();
     String content = "내용수정";
     requestDto.setContent(content);
