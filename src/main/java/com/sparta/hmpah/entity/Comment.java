@@ -37,13 +37,13 @@ public class Comment extends TimeStamped {
   private Long parentId;
 
   @Column(name = "position")
-  private int position;
+  private Integer position;
 
   @OneToMany
   @JoinColumn(name = "comment_id")
   private List<CommentLike> commentLikes;
 
-  public Comment(CommentRequest requestDto, User userDetails, Post post, int position) {
+  public Comment(CommentRequest requestDto, User userDetails, Post post, Integer position) {
     this.content = requestDto.getContent();
     this.user = userDetails;
     this.post = post;

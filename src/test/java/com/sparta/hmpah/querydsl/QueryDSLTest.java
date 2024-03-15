@@ -28,9 +28,12 @@ public class QueryDSLTest {
     //given
     User user =  userRepository.findById(1L).orElseThrow();
     Pageable pageable = PageRequest.of(1, 1);
+
+    User user2 = userRepository.findById(3L).orElseThrow();
+
     //when
     List<Comment> comments = commentService.queryDSL(user,"",pageable);
-    List<Comment> comments2 = commentService.queryDSL2(user,"",pageable);
+    List<Comment> comments2 = commentService.queryDSL2(user2,"",pageable);
     //then
     for(Comment comment : comments){
       System.out.print("comment.getUser().getUsername() = " + comment.getUser().getUsername());
